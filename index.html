@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Money Jar — Smart Savings</title>
+  <style>
+    :root{
+      --bg:#fff1f7;
+      --card:#fffaff;
+      --ink:#3c2540;
+      --muted:#8d6c82;
+      --primary:#e85b99;
+      --primary-dark:#b83d76;
+      --green:#4c9fff;
+      --red:#ef5b72;
+      --yellow:#ff9fbe;
+      --blue:#4c9fff;
+      --purple:#9b6cff;
+      --line:#f1d7e7;
+      --shadow:0 14px 34px rgba(210,78,138,.16);
+      --radius:20px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-rounded, "SF Pro Rounded", system-ui, -apple-system, Segoe UI, sans-serif;
+      color:var(--ink);
+      position:relative;
+      overflow-x:hidden;
+      background:
+        radial-gradient(circle at 9% 8%, rgba(232,91,153,.25) 0 4px, transparent 5px),
+        radial-gradient(circle at 88% 15%, rgba(155,108,255,.15) 0 5px, transparent 6px),
+        radial-gradient(circle at 80% 82%, rgba(255,159,190,.2) 0 4px, transparent 5px),
+        radial-gradient(circle at top left, #ffd8e8 0, transparent 34%),
+        radial-gradient(circle at top right, #f0ddff 0, transparent 32%),
+        var(--bg);
+      min-height:100vh;
+    }
+
+    body:before{
+      content:"$   $   $   $   $   $   $   $";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      color:rgba(232,91,153,.09);
+      font-size:clamp(70px,10vw,150px);
+      font-weight:900;
+      letter-spacing:18px;
+      line-height:1.4;
+      overflow:hidden;
+      transform:rotate(-12deg) scale(1.2);
+      white-space:pre-wrap;
+      word-spacing:80px;
+    }
+
+    .money-rain{
+      position:fixed;
+      inset:0;
+      z-index:0;
+      overflow:hidden;
+      pointer-events:none;
+    }
+
+    .falling-money{
+      position:absolute;
+      top:-12vh;
+      left:var(--left);
+      opacity:.72;
+      animation:money-fall var(--duration) linear var(--delay) infinite;
+      will-change:transform;
+    }
+
+    .falling-money.bill{
+      width:38px;
+      height:22px;
+      display:grid;
+      place-items:center;
+      border:2px solid rgba(92,73,190,.6);
+      border-radius:5px;
+      background:rgba(171,157,255,.82);
+      color:#4f3a9a;
+      font-size:14px;
+      font-weight:900;
+      box-shadow:0 4px 8px rgba(92,73,190,.12);
+    }
+
+    .falling-money.coin{
+      width:24px;
+      height:24px;
+      display:grid;
+      place-items:center;
+      border:2px solid rgba(216,81,117,.72);
+      border-radius:50%;
+      background:rgba(255,157,184,.88);
+      color:#8f3550;
+      font-size:12px;
+      font-weight:900;
+      box-shadow:0 4px 8px rgba(145,103,24,.1);
+    }
+
+    @keyframes money-fall{
+      0%{transform:translate3d(0,-12vh,0) rotate(0deg)}
+      25%{transform:translate3d(var(--drift),22vh,0) rotate(120deg)}
+      55%{transform:translate3d(calc(var(--drift) * -1),58vh,0) rotate(260deg)}
+      100%{transform:translate3d(var(--drift),115vh,0) rotate(520deg)}
+    }
+
+    .app{
+      width:min(1180px, calc(100% - 28px));
+      margin:0 auto;
+      padding:24px 0 44px;
+      position:relative;
+      z-index:1;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      align-items:center;
+      margin-bottom:22px;
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .brand-icon{
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:linear-gradient(145deg,#ff6f9f,#e85b99);
+      border:4px solid #f8ddff;
+      color:white;
+      font-size:26px;
+      box-shadow:0 8px 18px rgba(232,91,153,.26), inset 0 0 0 2px rgba(255,255,255,.35);
+    }
+
+    h1,h2,h3,p{margin-top:0}
+    h1{font-size:clamp(26px,4vw,40px); margin-bottom:4px}
+    .sub{color:var(--muted); margin-bottom:0}
+
+    .pill{
+      background:#ffe7f1;
+      border:1px solid #f2b6ce;
+      border-radius:999px;
+      padding:10px 14px;
+      color:var(--primary-dark);
+      font-weight:700;
+      box-shadow:0 6px 18px rgba(35,83,58,.06);
+      white-space:nowrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid rgba(232,224,207,.95);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+
+    .jar-card{
+      display:grid;
+      grid-template-columns:250px 1fr;
+      gap:22px;
+      align-items:center;
+      min-height:360px;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .jar-card:after{
+      content:"";
+      position:absolute;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:radial-gradient(circle at 35% 35%, #ffe0ec, #e5d8ff);
+      right:-80px;
+      top:-80px;
+      z-index:0;
+    }
+
+    .jar-wrap{position:relative; z-index:1}
+    .jar-card > div:last-child{min-width:0}
+    .jar{
+      width:210px;
+      height:260px;
+      margin:auto;
+      border:6px solid #e5a0bc;
+      border-top-width:10px;
+      border-radius:28px 28px 44px 44px;
+      background:linear-gradient(to top,#ffc1d0 0 var(--fill,50%),#fffaff var(--fill,50%) 100%);
+      position:relative;
+      overflow:hidden;
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.52), 0 12px 20px rgba(133,76,39,.12);
+    }
+
+    .jar:before{
+      content:"";
+      position:absolute;
+      left:22px;
+      right:22px;
+      top:-15px;
+      height:30px;
+      border-radius:10px;
+      background:#f28aa6;
+      border:4px solid #d65373;
+    }
+
+    .coins{
+      position:absolute;
+      left:0; right:0; bottom:8px;
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      flex-wrap:wrap;
+      padding:0 18px;
+    }
+
+    .coin{
+      width:28px; height:28px;
+      border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,#ffc0d1,#ef7190);
+      border:3px solid #d65373;
+      display:grid; place-items:center;
+      font-size:14px;
+      font-weight:900;
+      color:#8f3550;
+      box-shadow:0 2px 0 rgba(216,81,117,.22);
+    }
+
+    .balance-label{color:var(--muted);font-weight:700;margin-bottom:6px;white-space:nowrap}
+    .balance{
+      font-size:clamp(30px,6vw,64px);
+      line-height:1;
+      font-weight:900;
+      letter-spacing:-2px;
+      margin-bottom:12px;
+      max-width:100%;
+      white-space:nowrap;
+      overflow:visible;
+    }
+
+    .quick-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:2;
+    }
+
+    .header-donate{padding:10px 13px;font-size:13px}
+
+    button{
+      border:0;
+      border-radius:14px;
+      padding:12px 16px;
+      font:inherit;
+      font-weight:800;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    button:hover{transform:translateY(-1px)}
+    button:active{transform:translateY(0)}
+    .primary{background:linear-gradient(135deg,var(--primary),#ff82ad);color:white;box-shadow:0 7px 15px rgba(232,91,153,.24)}
+    .primary:hover{background:var(--primary-dark)}
+    .spend{background:#ffe8ef;color:#c43f5a}
+    .donate{background:#ffe2ef;color:#b83d76}
+    .soft{background:#e8f2ff;color:#3a6fb7}
+    .ghost{background:#f4efff;color:var(--ink)}
+    .danger{background:#ffe8ef;color:#c43f5a}
+    .reset-btn{padding:10px 13px;font-size:13px}
+    .points-pill{padding:10px 13px;border-radius:999px;background:#ffe2ef;border:1px solid #f2b1c9;color:#b83d76;font-size:13px;font-weight:900;white-space:nowrap}
+
+    .goal-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    .goal-emoji{
+      font-size:30px;
+      display:grid;
+      place-items:center;
+      width:54px;
+      height:54px;
+      border-radius:50%;
+      background:#ffe5ef;
+      border:1px solid #e7a3bc;
+      box-shadow:inset 0 0 0 5px rgba(255,255,255,.42);
+    }
+
+    .progress{
+      height:18px;
+      background:#ffeaf2;
+      border-radius:999px;
+      overflow:hidden;
+      margin:14px 0 8px;
+    }
+
+    .progress > div{
+      height:100%;
+      width:0;
+      background:linear-gradient(90deg,var(--primary),#f28aa6);
+      border-radius:inherit;
+      transition:width .3s ease;
+    }
+
+    .goal-meta{
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .money-plan{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+      margin-bottom:20px;
+    }
+
+    .money-bucket{
+      display:grid;
+      grid-template-columns:112px 1fr;
+      align-items:center;
+      gap:14px;
+      padding:16px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fbfaf5;
+      overflow:hidden;
+    }
+
+    .money-jar{
+      width:108px;
+      height:148px;
+      position:relative;
+      overflow:hidden;
+      border:5px solid #e5a0bc;
+      border-top-width:8px;
+      border-radius:18px 18px 28px 28px;
+      background:linear-gradient(to top,var(--jar-color,#ffc1d0) 0 var(--fill,0%),#fffaff var(--fill,0%) 100%);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.52),0 8px 14px rgba(133,76,39,.12);
+    }
+
+    .money-jar:before{
+      content:"";
+      position:absolute;
+      left:13px;
+      right:13px;
+      top:-13px;
+      height:22px;
+      border-radius:7px;
+      background:#f28aa6;
+      border:3px solid #d65373;
+      z-index:2;
+    }
+
+    .jar-items{
+      position:absolute;
+      left:7px;
+      right:7px;
+      bottom:7px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+
+    .jar-bill{
+      width:50px;
+      height:25px;
+      display:grid;
+      place-items:center;
+      border-radius:5px;
+      background:#ffc1d0;
+      border:2px solid #d65373;
+      color:#9d304b;
+      font-size:13px;
+      font-weight:900;
+      transform:rotate(-4deg);
+    }
+
+    .jar-coin{
+      width:22px;
+      height:22px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,#ffe99a,#e8b93f);
+      border:2px solid #c9951f;
+      color:#7d5a12;
+      font-size:11px;
+      font-weight:900;
+    }
+
+    .spending-jar{--jar-color:#ffc1d0;border-color:#e58aa2}
+    .spending-jar .jar-bill{background:#ffc1d0;border-color:#d65373;color:#9d304b}
+    .donating-jar{--jar-color:#d9c5ff;border-color:#ac8bdd}
+    .donating-jar .jar-bill{background:#d9c5ff;border-color:#8a63cc;color:#5b3b9a}
+
+    .money-bucket-head{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      color:var(--muted);
+      font-weight:800;
+      font-size:14px;
+    }
+
+    .money-bucket-icon{font-size:22px}
+    .money-bucket-amount{font-size:28px;font-weight:900;margin-top:7px}
+    .money-bucket-copy{color:var(--muted);font-size:13px;margin:3px 0 0}
+
+    .shop-card{margin-bottom:20px}
+    .shop-list{display:grid;gap:10px}
+    .shop-item{display:flex;align-items:center;gap:13px;padding:15px;border:1px solid #eadcf9;border-radius:16px;background:#faf7ff}
+    .shop-item-icon{font-size:28px}
+    .shop-item-main{min-width:0;flex:1}
+    .shop-item-main strong{display:block;margin-bottom:3px}
+    .shop-item-main span{color:var(--muted);font-size:14px}
+    .shop-badge{padding:7px 10px;border-radius:999px;background:#eee8ff;color:#6442bf;font-size:12px;font-weight:900;white-space:nowrap}
+
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .section-title h2{margin:0;font-size:22px}
+    .section-title span{color:var(--muted);font-size:14px}
+
+    .chart-wrap{
+      height:255px;
+      border:1px dashed #d8d1bf;
+      border-radius:18px;
+      padding:10px;
+      background:linear-gradient(#fffaff,#fff5fa);
+    }
+    canvas{width:100%;height:100%;display:block}
+
+    .three{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .mini-card h3{margin-bottom:4px}
+    .mini-card p{color:var(--muted);font-size:14px;margin-bottom:14px}
+    .list{display:flex;flex-direction:column;gap:10px}
+
+    .item{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      background:#fff5fa;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 13px;
+    }
+    .item-main{min-width:0}
+    .item-title{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .item-sub{font-size:13px;color:var(--muted);margin-top:3px}
+    .amount-pos{color:var(--green);font-weight:900}
+    .amount-neg{color:var(--red);font-weight:900}
+    .due-badge{
+      padding:6px 9px;
+      border-radius:999px;
+      background:#ffe5ef;
+      color:#b23f61;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .bottom-grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:20px;
+    }
+
+    .transaction-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    .transaction-table th,
+    .transaction-table td{
+      padding:11px 8px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+    }
+    .transaction-table th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+    .transaction-table td:last-child{white-space:nowrap}
+    .activity-actions{display:flex;gap:6px}
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:25px 8px;
+    }
+
+    .tips{
+      display:grid;
+      gap:12px;
+    }
+    .tip{
+      display:flex;
+      gap:12px;
+      padding:13px;
+      border-radius:16px;
+      background:#fbf8ff;
+      border:1px solid var(--line);
+    }
+    .tip-icon{font-size:24px}
+    .tip strong{display:block;margin-bottom:3px}
+    .tip span{color:var(--muted);font-size:14px}
+
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(47,28,83,.48);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:30;
+      backdrop-filter:blur(5px);
+    }
+    .modal.show{display:flex}
+    .modal-box{
+      width:min(460px,100%);
+      background:#fff;
+      border-radius:24px;
+      box-shadow:0 24px 70px rgba(74,48,140,.28);
+      padding:22px;
+    }
+    .modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .close{
+      width:38px;height:38px;
+      padding:0;
+      border-radius:12px;
+      background:#f1ebff;
+      font-size:20px;
+    }
+    label{
+      display:block;
+      font-size:13px;
+      font-weight:800;
+      margin:13px 0 6px;
+      color:#48516b;
+    }
+    input,select{
+      width:100%;
+      border:1px solid #dfe3ef;
+      border-radius:13px;
+      padding:12px 13px;
+      font:inherit;
+      outline:none;
+      background:white;
+    }
+    input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px #e3dbff}
+    .modal-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:22px;
+      transform:translate(-50%,20px);
+      background:#2d2540;
+      color:white;
+      padding:12px 16px;
+      border-radius:14px;
+      opacity:0;
+      pointer-events:none;
+      transition:.25s ease;
+      z-index:50;
+      font-weight:800;
+      box-shadow:var(--shadow);
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    .tiny-btn{
+      padding:8px 10px;
+      font-size:12px;
+      border-radius:10px;
+    }
+
+    .setup-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    @media (max-width:1100px){
+      .three{grid-template-columns:repeat(2,1fr)}
+    }
+
+    @media (max-width:900px){
+      .grid,.bottom-grid{grid-template-columns:1fr}
+      .three{grid-template-columns:1fr}
+      .money-plan{grid-template-columns:1fr}
+    }
+
+    @media (max-width:620px){
+      .app{width:min(100% - 18px,1180px);padding-top:14px}
+      .topbar{align-items:flex-start}
+      .pill{display:none}
+      .jar-card{grid-template-columns:1fr;text-align:center}
+      .jar{width:180px;height:220px}
+      .quick-actions{justify-content:center}
+      .card{padding:17px}
+      .balance{font-size:48px}
+      .transaction-table th:nth-child(3),
+      .transaction-table td:nth-child(3){display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="money-rain" aria-hidden="true">
+    <span class="falling-money bill" style="--left:4%;--delay:-2s;--duration:13s;--drift:28px">$</span>
+    <span class="falling-money coin" style="--left:11%;--delay:-8s;--duration:17s;--drift:-22px">$</span>
+    <span class="falling-money bill" style="--left:19%;--delay:-5s;--duration:15s;--drift:36px">$</span>
+    <span class="falling-money coin" style="--left:27%;--delay:-12s;--duration:19s;--drift:-30px">$</span>
+    <span class="falling-money bill" style="--left:35%;--delay:-1s;--duration:16s;--drift:24px">$</span>
+    <span class="falling-money coin" style="--left:43%;--delay:-10s;--duration:14s;--drift:-26px">$</span>
+    <span class="falling-money bill" style="--left:51%;--delay:-7s;--duration:18s;--drift:32px">$</span>
+    <span class="falling-money coin" style="--left:59%;--delay:-4s;--duration:15s;--drift:-34px">$</span>
+    <span class="falling-money bill" style="--left:67%;--delay:-14s;--duration:20s;--drift:25px">$</span>
+    <span class="falling-money coin" style="--left:75%;--delay:-6s;--duration:16s;--drift:-28px">$</span>
+    <span class="falling-money bill" style="--left:83%;--delay:-11s;--duration:17s;--drift:30px">$</span>
+    <span class="falling-money coin" style="--left:92%;--delay:-3s;--duration:19s;--drift:-24px">$</span>
+  </div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">💰</div>
+        <div>
+          <h1>Money Jar</h1>
+          <p class="sub">Earn it. Save it. Spend it smart.</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+        <div class="pill">Kid-friendly budget tracker</div>
+        <div class="points-pill">⭐ <span id="pointsTotal">0</span> points</div>
+        <button class="donate header-donate" onclick="openMoneyModal('donate')">💝 Donate Money</button>
+        <button class="danger reset-btn" onclick="resetEverything()">↺ Reset Everything</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card jar-card">
+        <div class="jar-wrap">
+          <div class="jar" id="moneyJar">
+            <div class="coins" id="coins"></div>
+          </div>
+        </div>
+        <div style="position:relative;z-index:1">
+          <div class="balance-label">Money in your jar</div>
+          <div class="balance" id="balance">$0.00</div>
+          <p class="sub" id="balanceMessage">Add some money to get started!</p>
+          <div class="quick-actions" style="margin-top:18px">
+            <button class="primary" onclick="openMoneyModal('add')">＋ Add Money</button>
+            <button class="spend" onclick="openMoneyModal('spend')">− Spend Money</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="goal-top">
+          <div>
+            <div class="balance-label">Your saving goal</div>
+            <h2 id="goalName">10000 bobux</h2>
+            <p class="sub" id="goalDescription">Save a little at a time and watch your progress grow.</p>
+          </div>
+          <div class="goal-emoji">🎯</div>
+        </div>
+        <div class="progress"><div id="goalBar"></div></div>
+        <div class="goal-meta">
+          <span id="goalSaved">$0 saved</span>
+          <span id="goalTarget">Goal: $100</span>
+        </div>
+        <div class="setup-actions">
+          <button class="soft tiny-btn" onclick="openGoalModal()">Edit Goal</button>
+          <button class="ghost tiny-btn" onclick="addToGoal()">Add from Jar</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="money-plan">
+      <div class="money-bucket">
+        <div class="money-jar saving-jar" id="savingJar"><div class="jar-items"></div></div>
+        <div>
+          <div class="money-bucket-head"><span class="money-bucket-icon">🌱</span> Saving</div>
+          <div class="money-bucket-amount" id="savingTotal">$0.00</div>
+          <p class="money-bucket-copy">Moved toward your goal</p>
+          <button class="spend tiny-btn" onclick="spendFromGoal()">− Spend from Goal</button>
+        </div>
+      </div>
+      <div class="money-bucket">
+        <div class="money-jar spending-jar" id="spendingJar"><div class="jar-items"></div></div>
+        <div>
+          <div class="money-bucket-head"><span class="money-bucket-icon">🛍️</span> Spending</div>
+          <div class="money-bucket-amount" id="spendingTotal">$0.00</div>
+          <p class="money-bucket-copy">Used for purchases</p>
+        </div>
+      </div>
+      <div class="money-bucket">
+        <div class="money-jar donating-jar" id="donatingJar"><div class="jar-items"></div></div>
+        <div>
+          <div class="money-bucket-head"><span class="money-bucket-icon">💝</span> Donating</div>
+          <div class="money-bucket-amount" id="donatingTotal">$0.00</div>
+          <p class="money-bucket-copy">Shared with others</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card shop-card">
+      <div class="section-title">
+        <div>
+          <h2>🛍️ Unlimited Shop Items</h2>
+          <span id="pointsMessage">Reach your goal to earn 10 points.</span>
+        </div>
+        <span>⭐ <span id="shopPoints">0</span> points</span>
+      </div>
+      <div class="shop-list" id="shopItems"></div>
+      <div class="setup-actions">
+        <button class="soft tiny-btn" onclick="addShopItem()">＋ Add Shop Item</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:20px">
+      <div class="section-title">
+        <div>
+          <h2>Your Money Graph</h2>
+          <span>See how your balance changes over time.</span>
+        </div>
+        <span id="graphStatus">Last 8 activities</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="moneyChart"></canvas>
+      </div>
+    </section>
+
+    <section class="three">
+      <div class="card mini-card">
+        <h3>🧾 Your: Spending Log</h3>
+        <p>Keep track of where your money went.</p>
+        <div class="list" id="spendingList"></div>
+      </div>
+
+      <div class="card mini-card">
+        <h3>🔔 Your: Upcoming Charges</h3>
+        <p>Know what payments are coming next.</p>
+        <div class="list" id="chargesList"></div>
+        <div class="setup-actions">
+          <button class="soft tiny-btn" onclick="openChargeModal()">＋ Add Charge</button>
+        </div>
+      </div>
+
+      <div class="card mini-card">
+        <h3>📅 Your: Due Dates</h3>
+        <p>Don’t forget when something is due.</p>
+        <div class="list" id="dueDatesList"></div>
+        <div class="setup-actions">
+          <button class="soft tiny-btn" onclick="openDueModal()">＋ Add Due Date</button>
+        </div>
+      </div>
+
+      <div class="card mini-card">
+        <h3>🎯 Your: Savings Goal</h3>
+        <p>Save a little at a time and watch it grow.</p>
+        <div class="item">
+          <div class="item-main">
+            <div class="item-title" id="miniGoalName">New Bike</div>
+            <div class="progress"><div id="miniGoalBar"></div></div>
+            <div class="goal-meta">
+              <span id="miniGoalSaved">$0 saved</span>
+              <span id="miniGoalTarget">Goal: $100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="card">
+        <div class="section-title">
+          <div>
+            <h2>Money Activity</h2>
+            <span>Everything you add or spend appears here.</span>
+          </div>
+          <button class="ghost tiny-btn" onclick="clearHistory()">Clear History</button>
+        </div>
+        <div style="overflow:auto">
+          <table class="transaction-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <div>
+            <h2>Smart Money Tips</h2>
+            <span>Simple rules that make budgeting easier.</span>
+          </div>
+        </div>
+        <div class="tips">
+          <div class="tip">
+            <div class="tip-icon">🌱</div>
+            <div><strong>Save first</strong><span>Try putting part of every amount you earn toward a goal.</span></div>
+          </div>
+          <div class="tip">
+            <div class="tip-icon">🛒</div>
+            <div><strong>Think before spending</strong><span>Ask yourself: “Do I need this, or do I just want it right now?”</span></div>
+          </div>
+          <div class="tip">
+            <div class="tip-icon">📆</div>
+            <div><strong>Check what’s coming</strong><span>Upcoming charges and due dates help you avoid surprises.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Add/Spend Modal -->
+  <div class="modal" id="moneyModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 id="moneyModalTitle" style="margin-bottom:4px">Add Money</h2>
+          <p class="sub" id="moneyModalSub">Put money into your jar.</p>
+        </div>
+        <button class="close" onclick="closeModal('moneyModal')">×</button>
+      </div>
+
+      <label for="moneyAmount">Amount</label>
+      <input id="moneyAmount" type="number" min="0.01" step="0.01" placeholder="10.00">
+
+      <label for="moneyCategory">Category</label>
+      <select id="moneyCategory">
+        <option>Allowance</option>
+        <option>Gift</option>
+        <option>Chores</option>
+        <option>Snacks</option>
+        <option>Games</option>
+        <option>Shopping</option>
+        <option>Donation</option>
+        <option>Other</option>
+      </select>
+
+      <label for="moneyNote">Note</label>
+      <input id="moneyNote" type="text" maxlength="40" placeholder="Example: Birthday money">
+
+      <div class="modal-actions">
+        <button class="ghost" onclick="closeModal('moneyModal')">Cancel</button>
+        <button class="primary" id="moneySubmit" onclick="submitMoney()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goal Modal -->
+  <div class="modal" id="goalModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 style="margin-bottom:4px">Edit Savings Goal</h2>
+          <p class="sub">Choose something worth saving for.</p>
+        </div>
+        <button class="close" onclick="closeModal('goalModal')">×</button>
+      </div>
+      <label for="goalNameInput">Goal name</label>
+      <input id="goalNameInput" maxlength="30" placeholder="New Bike">
+      <label for="goalTargetInput">Goal amount</label>
+      <input id="goalTargetInput" type="number" min="1" step="0.01" placeholder="100">
+      <div class="modal-actions">
+        <button class="ghost" onclick="closeModal('goalModal')">Cancel</button>
+        <button class="primary" onclick="saveGoal()">Save Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charge Modal -->
+  <div class="modal" id="chargeModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 style="margin-bottom:4px">Add Upcoming Charge</h2>
+          <p class="sub">Track a cost before it happens.</p>
+        </div>
+        <button class="close" onclick="closeModal('chargeModal')">×</button>
+      </div>
+      <label for="chargeName">Charge name</label>
+      <input id="chargeName" maxlength="35" placeholder="Game subscription">
+      <label for="chargeAmount">Amount</label>
+      <input id="chargeAmount" type="number" min="0.01" step="0.01" placeholder="4.99">
+      <label for="chargeDate">Date</label>
+      <input id="chargeDate" type="date">
+      <div class="modal-actions">
+        <button class="ghost" onclick="closeModal('chargeModal')">Cancel</button>
+        <button class="primary" onclick="saveCharge()">Add Charge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Due Modal -->
+  <div class="modal" id="dueModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 style="margin-bottom:4px">Add Due Date</h2>
+          <p class="sub">Remember an important payment date.</p>
+        </div>
+        <button class="close" onclick="closeModal('dueModal')">×</button>
+      </div>
+      <label for="dueName">What is due?</label>
+      <input id="dueName" maxlength="35" placeholder="Pay club fee">
+      <label for="dueDate">Due date</label>
+      <input id="dueDate" type="date">
+      <div class="modal-actions">
+        <button class="ghost" onclick="closeModal('dueModal')">Cancel</button>
+        <button class="primary" onclick="saveDue()">Add Due Date</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "moneyJarBudgetV2";
+    let mode = "add";
+
+    const defaultState = {
+      balance: 0,
+      goal: { name: "10000 bobux", target: 100, saved: 0 },
+      sophieGoal: { name: "New Bike", target: 100, saved: 0 },
+      points: 0,
+      goalRewardClaimed: false,
+      shopItems: [
+        {name:"Extra game time",cost:10,icon:"🎮"},
+        {name:"Favorite snack",cost:15,icon:"🍪"},
+        {name:"Movie night",cost:25,icon:"🎬"}
+      ],
+      transactions: [],
+      charges: [],
+      dueDates: []
+    };
+
+    function futureDate(days){
+      const d=new Date();
+      d.setDate(d.getDate()+days);
+      return d.toISOString().slice(0,10);
+    }
+
+    function loadState(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return saved ? {...defaultState,...saved} : structuredClone(defaultState);
+      }catch{
+        return structuredClone(defaultState);
+      }
+    }
+
+    let state = loadState();
+    if(awardGoalPoints()) saveState();
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function money(n){
+      return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(n)||0);
+    }
+
+    function wholeMoney(n){
+      return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(Number(n)||0);
+    }
+
+    function shortDate(value){
+      return new Date(value).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    }
+
+    function showToast(msg){
+      const toast=document.getElementById("toast");
+      toast.textContent=msg;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer=setTimeout(()=>toast.classList.remove("show"),2200);
+    }
+
+    function awardGoalPoints(){
+      if(state.goal.saved>=state.goal.target && !state.goalRewardClaimed){
+        state.goalRewardClaimed=true;
+        state.points=(Number(state.points)||0)+10;
+        return true;
+      }
+      return false;
+    }
+
+    function renderPoints(){
+      const points=Number(state.points)||0;
+      document.getElementById("pointsTotal").textContent=points;
+      document.getElementById("shopPoints").textContent=points;
+      document.getElementById("pointsMessage").textContent=state.goalRewardClaimed
+        ? "Goal reached! You earned 10 points for your shop."
+        : "Reach your goal to earn 10 points.";
+    }
+
+    function renderShopItems(){
+      const list=document.getElementById("shopItems");
+      if(!state.shopItems.length){
+        list.innerHTML='<div class="empty">No shop items yet. Add one to get started!</div>';
+        return;
+      }
+      list.innerHTML=state.shopItems.map((item,index)=>`
+        <div class="shop-item">
+          <div class="shop-item-icon">${escapeHtml(item.icon||"🎁")}</div>
+          <div class="shop-item-main">
+            <strong>${escapeHtml(item.name)}</strong>
+            <span>Reward from your unlimited shop</span>
+          </div>
+          <div style="text-align:right">
+            <div class="shop-badge">${item.cost} pts</div>
+            <button class="soft tiny-btn" style="margin-top:6px" onclick="redeemShopItem(${index})">Redeem</button>
+          </div>
+        </div>`).join("");
+    }
+
+    function addShopItem(){
+      const name=prompt("What reward should be added to your shop?");
+      if(name===null) return;
+      const cleanName=name.trim();
+      const rawCost=prompt("How many points should it cost?");
+      if(rawCost===null) return;
+      const cost=parseInt(rawCost,10);
+      if(!cleanName || !cost || cost<=0){
+        showToast("Add a reward name and a points cost.");
+        return;
+      }
+      const icon=prompt("Choose an emoji for the item (optional):","🎁") || "🎁";
+      state.shopItems.push({name:cleanName,cost,icon});
+      saveState();
+      renderShopItems();
+      showToast("Shop item added.");
+    }
+
+    function redeemShopItem(index){
+      const item=state.shopItems[index];
+      if(!item) return;
+      if((Number(state.points)||0)<item.cost){
+        showToast("You need more points for that reward.");
+        return;
+      }
+      state.points-=item.cost;
+      saveState();
+      renderPoints();
+      renderShopItems();
+      showToast(`${item.name} redeemed!`);
+    }
+
+    function openMoneyModal(newMode){
+      mode=newMode;
+      const copy = mode==="add"
+        ? {title:"Add Money",sub:"Put money into your jar.",submit:"Add to Jar",category:"Allowance"}
+        : mode==="donate"
+        ? {title:"Donate Money",sub:"Share money with someone or a cause you care about.",submit:"Donate",category:"Donation"}
+        : {title:"Spend Money",sub:"Take money out of your jar.",submit:"Spend",category:"Snacks"};
+      document.getElementById("moneyModalTitle").textContent=copy.title;
+      document.getElementById("moneyModalSub").textContent=copy.sub;
+      document.getElementById("moneySubmit").textContent=copy.submit;
+      document.getElementById("moneyCategory").value=copy.category;
+      document.getElementById("moneyAmount").value="";
+      document.getElementById("moneyNote").value="";
+      document.getElementById("moneyModal").classList.add("show");
+      setTimeout(()=>document.getElementById("moneyAmount").focus(),50);
+    }
+
+    function closeModal(id){
+      document.getElementById(id).classList.remove("show");
+    }
+
+    function submitMoney(){
+      const amount=parseFloat(document.getElementById("moneyAmount").value);
+      const category=document.getElementById("moneyCategory").value;
+      const note=document.getElementById("moneyNote").value.trim() || (mode==="add" ? "Money added" : mode==="donate" ? "Donation" : "Money spent");
+
+      if(!amount || amount<=0){
+        showToast("Enter an amount bigger than $0.");
+        return;
+      }
+
+      if((mode==="spend" || mode==="donate") && amount>state.balance){
+        showToast("You don’t have enough money in your jar.");
+        return;
+      }
+
+      state.balance += mode==="add" ? amount : -amount;
+      state.balance = Math.round(state.balance*100)/100;
+      state.transactions.unshift({
+        type:mode,
+        amount,
+        category,
+        note,
+        date:new Date().toISOString()
+      });
+
+      saveState();
+      closeModal("moneyModal");
+      renderAll();
+      showToast(mode==="add" ? `${money(amount)} added!` : mode==="donate" ? `${money(amount)} donated.` : `${money(amount)} spent.`);
+    }
+
+    function openGoalModal(){
+      document.getElementById("goalNameInput").value=state.goal.name;
+      document.getElementById("goalTargetInput").value=state.goal.target;
+      document.getElementById("goalModal").classList.add("show");
+    }
+
+    function saveGoal(){
+      const name=document.getElementById("goalNameInput").value.trim();
+      const target=parseFloat(document.getElementById("goalTargetInput").value);
+      if(!name || !target || target<=0){
+        showToast("Add a goal name and amount.");
+        return;
+      }
+      const goalChanged=name!==state.goal.name || target!==state.goal.target;
+      state.goal.name=name;
+      state.goal.target=target;
+      if(goalChanged) state.goalRewardClaimed=false;
+      const earned=awardGoalPoints();
+      saveState();
+      closeModal("goalModal");
+      renderGoal();
+      renderPoints();
+      showToast(earned ? "Goal reached! You earned 10 points!" : "Savings goal updated!");
+    }
+
+    function addToGoal(){
+      const raw=prompt(`How much from your jar do you want to move into "${state.goal.name}"?`);
+      if(raw===null) return;
+      const amount=parseFloat(raw);
+      if(!amount || amount<=0){
+        showToast("Enter a valid amount.");
+        return;
+      }
+      if(amount>state.balance){
+        showToast("That’s more than what’s in your jar.");
+        return;
+      }
+      state.balance-=amount;
+      state.goal.saved+=amount;
+      const earned=awardGoalPoints();
+      state.transactions.unshift({
+        type:"spend",
+        amount,
+        category:"Savings Goal",
+        note:`Saved for ${state.goal.name}`,
+        date:new Date().toISOString()
+      });
+      saveState();
+      renderAll();
+      showToast(earned ? "Goal reached! You earned 10 points!" : `${money(amount)} moved to your goal!`);
+    }
+
+    function spendFromGoal(){
+      const raw=prompt(`How much do you want to spend from "${state.goal.name}"?`);
+      if(raw===null) return;
+      const amount=parseFloat(raw);
+      if(!amount || amount<=0){
+        showToast("Enter a valid amount.");
+        return;
+      }
+      if(amount>state.goal.saved){
+        showToast("That’s more than what is saved in your goal.");
+        return;
+      }
+      state.goal.saved=Math.round((state.goal.saved-amount)*100)/100;
+      state.transactions.unshift({
+        type:"goalSpend",
+        amount,
+        category:"Goal Spending",
+        note:`Spent from ${state.goal.name}`,
+        date:new Date().toISOString()
+      });
+      if(state.goal.saved<state.goal.target) state.goalRewardClaimed=false;
+      saveState();
+      renderAll();
+      showToast(`${money(amount)} spent from your goal.`);
+    }
+
+    function openChargeModal(){
+      document.getElementById("chargeName").value="";
+      document.getElementById("chargeAmount").value="";
+      document.getElementById("chargeDate").value=futureDate(7);
+      document.getElementById("chargeModal").classList.add("show");
+    }
+
+    function saveCharge(){
+      const name=document.getElementById("chargeName").value.trim();
+      const amount=parseFloat(document.getElementById("chargeAmount").value);
+      const date=document.getElementById("chargeDate").value;
+      if(!name || !amount || amount<=0 || !date){
+        showToast("Fill in the charge name, amount, and date.");
+        return;
+      }
+      state.charges.push({name,amount,date});
+      state.charges.sort((a,b)=>new Date(a.date)-new Date(b.date));
+      saveState();
+      closeModal("chargeModal");
+      renderCharges();
+      showToast("Upcoming charge added.");
+    }
+
+    function removeCharge(index){
+      state.charges.splice(index,1);
+      saveState();
+      renderCharges();
+    }
+
+    function openDueModal(){
+      document.getElementById("dueName").value="";
+      document.getElementById("dueDate").value=futureDate(7);
+      document.getElementById("dueModal").classList.add("show");
+    }
+
+    function saveDue(){
+      const name=document.getElementById("dueName").value.trim();
+      const date=document.getElementById("dueDate").value;
+      if(!name || !date){
+        showToast("Fill in the name and due date.");
+        return;
+      }
+      state.dueDates.push({name,date});
+      state.dueDates.sort((a,b)=>new Date(a.date)-new Date(b.date));
+      saveState();
+      closeModal("dueModal");
+      renderDueDates();
+      showToast("Due date added.");
+    }
+
+    function removeDue(index){
+      state.dueDates.splice(index,1);
+      saveState();
+      renderDueDates();
+    }
+
+    function clearHistory(){
+      if(!confirm("Clear your money activity history? Your current balance will stay the same.")) return;
+      state.transactions=[];
+      saveState();
+      renderAll();
+      showToast("History cleared.");
+    }
+
+    function resetEverything(){
+      if(!confirm("Reset everything? This will erase your balance, goal, activity, charges, and due dates.")) return;
+      state=structuredClone(defaultState);
+      saveState();
+      renderAll();
+      showToast("Money tracker reset to $0.");
+    }
+
+    function renderBalance(){
+      const balanceEl=document.getElementById("balance");
+      const balanceText=money(state.balance);
+      balanceEl.textContent=balanceText;
+      const availableWidth=balanceEl.parentElement?.clientWidth||320;
+      const fittedSize=Math.max(18,Math.min(64,availableWidth/(Math.max(1,balanceText.length)*.58)));
+      balanceEl.style.fontSize=fittedSize+"px";
+      const fill=Math.max(8,Math.min(100,(state.balance/100)*100));
+      document.getElementById("moneyJar").style.setProperty("--fill",fill+"%");
+
+      const msg = state.balance===0
+        ? "Add some money to get started!"
+        : state.balance<10
+        ? "Your jar is getting low. Try earning or saving more!"
+        : state.balance<50
+        ? "Nice start! Keep growing your money jar."
+        : "Great job! Your jar is looking strong.";
+      document.getElementById("balanceMessage").textContent=msg;
+
+      const count=state.balance===0 ? 0 : Math.max(4,Math.min(18,Math.round(state.balance/5)));
+      document.getElementById("coins").innerHTML=Array.from({length:count},()=>'<div class="coin">$</div>').join("");
+    }
+
+    function renderGoal(){
+      const pct=Math.max(0,Math.min(100,(state.goal.saved/state.goal.target)*100));
+      document.getElementById("goalName").textContent=state.goal.name;
+      document.getElementById("goalBar").style.width=pct+"%";
+      document.getElementById("goalSaved").textContent=`${money(state.goal.saved)} saved`;
+      document.getElementById("goalTarget").textContent=`Goal: ${money(state.goal.target)}`;
+      const sophiePct=Math.max(0,Math.min(100,(state.sophieGoal.saved/state.sophieGoal.target)*100));
+      document.getElementById("miniGoalName").textContent=state.sophieGoal.name;
+      document.getElementById("miniGoalBar").style.width=sophiePct+"%";
+      document.getElementById("miniGoalSaved").textContent=`${money(state.sophieGoal.saved)} saved`;
+      document.getElementById("miniGoalTarget").textContent=`Goal: ${money(state.sophieGoal.target)}`;
+    }
+
+    function renderSpending(){
+      const list=document.getElementById("spendingList");
+      const items=state.transactions
+        .filter(t=>(t.type==="spend" && t.category!=="Savings Goal") || t.type==="goalSpend")
+        .slice(0,5);
+      if(!items.length){
+        list.innerHTML='<div class="empty">No spending yet.</div>';
+        return;
+      }
+      list.innerHTML=items.map(t=>`
+        <div class="item">
+          <div class="item-main">
+            <div class="item-title">${escapeHtml(t.note)}</div>
+            <div class="item-sub">${escapeHtml(t.category)} • ${shortDate(t.date)}</div>
+          </div>
+          <div class="amount-neg">-${money(t.amount)}</div>
+        </div>`).join("");
+    }
+
+    function renderCharges(){
+      const list=document.getElementById("chargesList");
+      if(!state.charges.length){
+        list.innerHTML='<div class="empty">No upcoming charges.</div>';
+        return;
+      }
+      list.innerHTML=state.charges.map((c,i)=>`
+        <div class="item">
+          <div class="item-main">
+            <div class="item-title">${escapeHtml(c.name)}</div>
+            <div class="item-sub">${shortDate(c.date)}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="amount-neg">${money(c.amount)}</div>
+            <button class="ghost tiny-btn" style="margin-top:5px" onclick="removeCharge(${i})">Done</button>
+          </div>
+        </div>`).join("");
+    }
+
+    function daysUntil(date){
+      const a=new Date();
+      a.setHours(0,0,0,0);
+      const b=new Date(date+"T00:00:00");
+      return Math.ceil((b-a)/86400000);
+    }
+
+    function renderDueDates(){
+      const list=document.getElementById("dueDatesList");
+      if(!state.dueDates.length){
+        list.innerHTML='<div class="empty">No due dates yet.</div>';
+        return;
+      }
+      list.innerHTML=state.dueDates.map((d,i)=>{
+        const days=daysUntil(d.date);
+        const label=days<0 ? "Past due" : days===0 ? "Today" : days===1 ? "Tomorrow" : `${days} days`;
+        return `
+          <div class="item">
+            <div class="item-main">
+              <div class="item-title">${escapeHtml(d.name)}</div>
+              <div class="item-sub">${shortDate(d.date)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="due-badge">${label}</div>
+              <button class="ghost tiny-btn" style="margin-top:5px" onclick="removeDue(${i})">Done</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderMiniJar(id, amount){
+      const jar=document.getElementById(id);
+      const items=jar.querySelector(".jar-items");
+      const value=Number(amount)||0;
+      const fill=value===0 ? 0 : Math.min(92,18+Math.log10(value+1)*22);
+      const billCount=value===0 ? 0 : Math.min(4,Math.max(1,Math.ceil(value/250)));
+      const coinCount=value===0 ? 0 : Math.min(8,Math.max(1,Math.round(value)%9));
+      jar.style.setProperty("--fill",fill+"%");
+      items.innerHTML=[
+        ...Array.from({length:billCount},()=>'<div class="jar-bill">$</div>'),
+        ...Array.from({length:coinCount},()=>'<div class="jar-coin">$</div>')
+      ].join("");
+    }
+
+    function renderMoneyPlan(){
+      const spent=state.transactions
+        .filter(t=>(t.type==="spend" && t.category!=="Savings Goal") || t.type==="goalSpend")
+        .reduce((sum,t)=>sum+Number(t.amount||0),0);
+      const donated=state.transactions
+        .filter(t=>t.type==="donate")
+        .reduce((sum,t)=>sum+Number(t.amount||0),0);
+      document.getElementById("savingTotal").textContent=money(state.goal.saved);
+      document.getElementById("spendingTotal").textContent=money(spent);
+      document.getElementById("donatingTotal").textContent=money(donated);
+      renderMiniJar("savingJar",state.goal.saved);
+      renderMiniJar("spendingJar",spent);
+      renderMiniJar("donatingJar",donated);
+    }
+
+    function applyTransactionToState(transaction,direction){
+      const amount=Number(transaction.amount)||0;
+      if(transaction.type==="add"){
+        state.balance+=direction*amount;
+      }else if(transaction.type==="spend" || transaction.type==="donate"){
+        state.balance-=direction*amount;
+        if(transaction.type==="spend" && transaction.category==="Savings Goal"){
+          state.goal.saved+=direction*amount;
+        }
+      }else if(transaction.type==="goalSpend"){
+        state.goal.saved-=direction*amount;
+      }
+      state.balance=Math.round(state.balance*100)/100;
+      state.goal.saved=Math.round(state.goal.saved*100)/100;
+    }
+
+    function editTransaction(index){
+      const transaction=state.transactions[index];
+      if(!transaction) return;
+      const rawAmount=prompt("Edit amount:",transaction.amount);
+      if(rawAmount===null) return;
+      const amount=parseFloat(rawAmount);
+      if(!amount || amount<=0){
+        showToast("Enter a valid amount.");
+        return;
+      }
+      const note=prompt("Edit note:",transaction.note||"");
+      if(note===null) return;
+
+      if(transaction.type==="goalSpend" && amount>state.goal.saved+transaction.amount){
+        showToast("That’s more than what is saved in your goal.");
+        return;
+      }
+      if((transaction.type==="donate" || (transaction.type==="spend" && transaction.category!=="Savings Goal")) && amount>state.balance+transaction.amount){
+        showToast("That’s more than what is in your jar.");
+        return;
+      }
+      if(transaction.type==="spend" && transaction.category==="Savings Goal" && amount>state.balance+transaction.amount){
+        showToast("That’s more than what is in your jar to save.");
+        return;
+      }
+
+      applyTransactionToState(transaction,-1);
+      transaction.amount=amount;
+      transaction.note=note.trim() || transaction.note || "Money activity";
+      applyTransactionToState(transaction,1);
+      if(state.goal.saved<state.goal.target) state.goalRewardClaimed=false;
+      awardGoalPoints();
+      saveState();
+      renderAll();
+      showToast("Activity updated.");
+    }
+
+    function deleteTransaction(index){
+      const transaction=state.transactions[index];
+      if(!transaction) return;
+      if(!confirm(`Delete this activity: ${transaction.note||"Money activity"}?`)) return;
+      applyTransactionToState(transaction,-1);
+      state.transactions.splice(index,1);
+      if(state.goal.saved<state.goal.target) state.goalRewardClaimed=false;
+      saveState();
+      renderAll();
+      showToast("Activity deleted.");
+    }
+
+    function renderTransactions(){
+      const body=document.getElementById("transactionsBody");
+      if(!state.transactions.length){
+        body.innerHTML='<tr><td colspan="5" class="empty">No activity yet. Add or spend money to begin.</td></tr>';
+        return;
+      }
+      body.innerHTML=state.transactions.slice(0,12).map(t=>`
+        <tr>
+          <td>${t.type==="add" ? "💵 Earned" : t.type==="donate" ? "💝 Donated" : t.type==="goalSpend" ? "🎯 Goal Spend" : "🛍️ Spent"}</td>
+          <td class="${t.type==="add"?"amount-pos":"amount-neg"}">${t.type==="add"?"+":"-"}${money(t.amount)}</td>
+          <td>${escapeHtml(t.category)}</td>
+          <td>${shortDate(t.date)}</td>
+          <td>
+            <div class="activity-actions">
+              <button class="soft tiny-btn" onclick="editTransaction(${i})">Edit</button>
+              <button class="danger tiny-btn" onclick="deleteTransaction(${i})">Delete</button>
+            </div>
+          </td>
+        </tr>`).join("");
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[s]));
+    }
+
+    function getChartData(){
+      const tx=[...state.transactions].reverse().slice(-8);
+      let startBalance=state.balance;
+      tx.forEach(t=>{
+        startBalance-=transactionDelta(t);
+      });
+
+      const points=[{label:"Start",value:startBalance}];
+      let running=startBalance;
+      tx.forEach(t=>{
+        running+=transactionDelta(t);
+        points.push({label:shortDate(t.date),value:running});
+      });
+      return points;
+    }
+
+    function transactionDelta(t){
+      if(t.type==="add") return Number(t.amount)||0;
+      if(t.type==="spend" || t.type==="donate") return -(Number(t.amount)||0);
+      return 0;
+    }
+
+    function drawChart(){
+      const canvas=document.getElementById("moneyChart");
+      const parent=canvas.parentElement;
+      const dpr=window.devicePixelRatio||1;
+      const width=parent.clientWidth-20;
+      const height=parent.clientHeight-20;
+      canvas.width=width*dpr;
+      canvas.height=height*dpr;
+      canvas.style.width=width+"px";
+      canvas.style.height=height+"px";
+      const ctx=canvas.getContext("2d");
+      ctx.scale(dpr,dpr);
+
+      const data=getChartData();
+      document.getElementById("graphStatus").textContent=data.length>1?`Last ${data.length-1} activities`:"No activity yet";
+
+      const maxAxisLabelLength=Math.max(...data.map(d=>wholeMoney(d.value).length));
+      const pad={l:Math.min(150,Math.max(48,maxAxisLabelLength*7+14)),r:18,t:20,b:38};
+      const w=width-pad.l-pad.r;
+      const h=height-pad.t-pad.b;
+
+      ctx.clearRect(0,0,width,height);
+      ctx.font="12px system-ui";
+      ctx.fillStyle="#718078";
+      ctx.strokeStyle="#e5dcf5";
+      ctx.lineWidth=1;
+
+      const vals=data.map(d=>d.value);
+      let min=Math.min(...vals,0);
+      let max=Math.max(...vals,10);
+      if(max-min<10) max=min+10;
+
+      for(let i=0;i<4;i++){
+        const y=pad.t+(h/3)*i;
+        ctx.beginPath();
+        ctx.moveTo(pad.l,y);
+        ctx.lineTo(width-pad.r,y);
+        ctx.stroke();
+        const val=max-((max-min)/3)*i;
+        ctx.fillText(wholeMoney(val),6,y+4);
+      }
+
+      const xFor=i=>pad.l+(data.length===1?w/2:(w/(data.length-1))*i);
+      const yFor=v=>pad.t+h-((v-min)/(max-min))*h;
+
+      if(data.length>1){
+        const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+h);
+        grad.addColorStop(0,"rgba(122,90,248,.28)");
+        grad.addColorStop(1,"rgba(122,90,248,.02)");
+
+        ctx.beginPath();
+        data.forEach((d,i)=>{
+          const x=xFor(i), y=yFor(d.value);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.lineTo(xFor(data.length-1),pad.t+h);
+        ctx.lineTo(xFor(0),pad.t+h);
+        ctx.closePath();
+        ctx.fillStyle=grad;
+        ctx.fill();
+
+        ctx.beginPath();
+        data.forEach((d,i)=>{
+          const x=xFor(i), y=yFor(d.value);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.strokeStyle="#7a5af8";
+        ctx.lineWidth=3;
+        ctx.stroke();
+
+        data.forEach((d,i)=>{
+          const x=xFor(i), y=yFor(d.value);
+          ctx.beginPath();
+          ctx.arc(x,y,4.5,0,Math.PI*2);
+          ctx.fillStyle="#fff";
+          ctx.fill();
+          ctx.strokeStyle="#7a5af8";
+          ctx.lineWidth=3;
+          ctx.stroke();
+        });
+      }
+
+      const labelIndexes=data.length<=5 ? data.map((_,i)=>i) : [0,Math.floor((data.length-1)/2),data.length-1];
+      ctx.fillStyle="#718078";
+      ctx.textAlign="center";
+      labelIndexes.forEach(i=>ctx.fillText(data[i].label,xFor(i),height-12));
+      ctx.textAlign="start";
+    }
+
+    function renderAll(){
+      renderBalance();
+      renderGoal();
+      renderPoints();
+      renderShopItems();
+      renderMoneyPlan();
+      renderSpending();
+      renderCharges();
+      renderDueDates();
+      renderTransactions();
+      drawChart();
+    }
+
+    document.querySelectorAll(".modal").forEach(modal=>{
+      modal.addEventListener("click",e=>{
+        if(e.target===modal) modal.classList.remove("show");
+      });
+    });
+
+    window.addEventListener("resize",()=>requestAnimationFrame(()=>{
+      renderBalance();
+      drawChart();
+    }));
+    renderAll();
+  </script>
+</body>
+</html>
